@@ -6,71 +6,73 @@ import * as dartSass from 'sass'
 import gulpSass from 'gulp-sass'
 import terser from 'gulp-terser'
 import sharp from 'sharp'
+import plumber from 'gulp-plumber'
+import postcss from 'gulp-postcss'
+import autoprefixer from 'autoprefixer'
 
 const sass = gulpSass(dartSass)
 
 const paths = {
-    scss: 'src/scss/**/*.scss',
-    js: 'src/js/**/*.js'
+  scss: 'src/scss/**/*.scss',
+  js:   'src/js/**/*.js',
+  img:  'src/img/**/*.{png,jpg,jpeg,svg}'
 }
 
-export function css( done ) {
-    src(paths.scss, {sourcemaps: true})
-        .pipe( sass({
-            outputStyle: 'compressed'
-        }).on('error', sass.logError) )
-        .pipe( dest('./public/build/css', {sourcemaps: '.'}) );
-    done()
+// CSS (stream devuelto + plumber + postcss)
+export function css() {
+  return src(paths.scss, { sourcemaps: true })
+    .pipe(plumber({ errorHandler: sass.logError }))
+    .pipe(sass.sync({ outputStyle: 'compressed' }))
+    .pipe(postcss([autoprefixer()]))
+    .pipe(dest('public/build/css', { sourcemaps: '.' }))
 }
 
-export function js( done ) {
-    src(paths.js)
-      .pipe(terser())
-      .pipe(dest('./public/build/js'))
-    done()
+// JS (stream devuelto)
+export function js() {
+  return src(paths.js)
+    .pipe(terser())
+    .pipe(dest('public/build/js'))
 }
 
-export async function imagenes(done) {
-    const srcDir = './src/img';
-    const buildDir = './public/build/img';
-    const images =  await glob('./src/img/**/*')
+// IMÁGENES (promesa devuelta, espera a sharp)
+export async function imagenes() {
+  const srcDir = 'src/img'
+  const buildDir = 'public/build/img'
+  const files = await glob(`${srcDir}/**/*`, { nodir: true })
 
-    images.forEach(file => {
-        const relativePath = path.relative(srcDir, path.dirname(file));
-        const outputSubDir = path.join(buildDir, relativePath);
-        procesarImagenes(file, outputSubDir);
-    });
-    done();
-}
+  await Promise.all(files.map(async (file) => {
+    const relativePath = path.relative(srcDir, path.dirname(file))
+    const outDir = path.join(buildDir, relativePath)
+    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true })
 
-function procesarImagenes(file, outputSubDir) {
-    if (!fs.existsSync(outputSubDir)) {
-        fs.mkdirSync(outputSubDir, { recursive: true })
+    const base = path.basename(file, path.extname(file))
+    const ext  = path.extname(file).toLowerCase()
+
+    if (ext === '.svg') {
+      fs.copyFileSync(file, path.join(outDir, `${base}${ext}`))
+      return
     }
-    const baseName = path.basename(file, path.extname(file))
-    const extName = path.extname(file)
 
-    if (extName.toLowerCase() === '.svg') {
-        // If it's an SVG file, move it to the output directory
-        const outputFile = path.join(outputSubDir, `${baseName}${extName}`);
-    fs.copyFileSync(file, outputFile);
-    } else {
-        // For other image formats, process them with sharp
-        const outputFile = path.join(outputSubDir, `${baseName}${extName}`);
-        const outputFileWebp = path.join(outputSubDir, `${baseName}.webp`);
-        const outputFileAvif = path.join(outputSubDir, `${baseName}.avif`);
-        const options = { quality: 80 };
+    const jpgOut  = path.join(outDir, `${base}${ext}`)
+    const webpOut = path.join(outDir, `${base}.webp`)
+    const avifOut = path.join(outDir, `${base}.avif`)
 
-        sharp(file).jpeg(options).toFile(outputFile);
-        sharp(file).webp(options).toFile(outputFileWebp);
-        sharp(file).avif().toFile(outputFileAvif);
-    }
+    const opts = { quality: 80 }
+    // procesamos en paralelo y esperamos
+    await Promise.all([
+      sharp(file).toFormat('jpeg', opts).toFile(jpgOut),
+      sharp(file).webp(opts).toFile(webpOut),
+      sharp(file).avif().toFile(avifOut),
+    ])
+  }))
 }
 
+// WATCH
 export function dev() {
-    watch( paths.scss, css );
-    watch( paths.js, js );
-    watch('src/img/**/*.{png,jpg}', imagenes)
+  watch(paths.scss, css)
+  watch(paths.js, js)
+  watch(paths.img, imagenes)
 }
 
-export default series( js, css, imagenes, dev )
+// orden por defecto
+export default series(js, css, imagenes, dev)
