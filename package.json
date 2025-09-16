@@ -10,8 +10,11 @@
   },
   "license": "ISC",
   "devDependencies": {
+    "autoprefixer": "^10.4.21",
     "glob": "^10.3.12",
     "gulp": "^5.0.0",
+    "gulp-plumber": "^1.2.1",
+    "gulp-postcss": "^10.0.0",
     "gulp-sass": "^5.1.0",
     "gulp-terser": "^2.1.0",
     "sass": "^1.75.0",
