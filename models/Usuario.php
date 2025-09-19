@@ -60,6 +60,38 @@ class Usuario extends ActiveRecord {
         return self::$alertas;
     }
 
+    public function validarLogin() {
+        if (!$this->email) {
+            self::$alertas['error'][] = 'El Email es Obligatorio';
+        }
+
+        if (!$this->password) {
+            self::$alertas['error'][] = 'El Password es Obligatorio';
+        }
+
+        return self::$alertas;
+    }
+
+    public function validarEmail() {
+        if (!$this->email) {
+            self::$alertas['error'][] = 'El Email es Obligatorio';
+        }
+
+        return self::$alertas;
+    }
+
+    public function validarPassword() {
+        if (!$this->password) {
+            self::$alertas['error'][] = 'El Password es Obligatorio';
+        }
+
+        if (strlen($this->password) < 6) {
+            self::$alertas['error'][] = 'El Password debe contener al menos 6 caracteres';
+        }
+
+        return self::$alertas;
+    }
+
     public function existeUsuario() {
         $query = "SELECT * FROM " . self::$tabla . " WHERE email = '" . $this->email . "' LIMIT 1";
 
@@ -78,5 +110,17 @@ class Usuario extends ActiveRecord {
 
     public function crearToken() {
         $this->token = uniqid();
+    }
+    
+
+    public function comprobarPasswordAndVerificado($password) {
+        $resultado = password_verify($password, $this->password);
+
+        if (!$resultado || !$this->confirmado) {
+            self::$alertas['error'][] = 'Password Incorrecto o tu cuenta no ha sido confirmada';
+            return false;
+        } else {
+            return true;
+        }
     }
 }
