@@ -3,6 +3,7 @@ const pasoInicial = 1;
 const pasoFinal = 3;
 
 const cita = {
+    id: '',
     nombre: '',
     fecha: '',
     hora: '',
@@ -23,6 +24,8 @@ function iniciarApp() {
     paginaAnterior();
 
     consultarAPI(); //Consulta la API de PHP
+
+    idCliente(); //Genera un ID único para la cita
     nombreCliente(); //Agrega el nombre del cliente al objeto de cita
     SeleccionarFecha();  //Deshabilitar días pasados
     SeleccionarHora(); //Deshabilitar días pasados
@@ -160,6 +163,10 @@ function mostrarServicios(servicios) {
 
     cita.servicios = [...servicios, servicio];
    }
+
+function idCliente() {
+    cita.id = document.querySelector('#id').value;
+}
 
 function nombreCliente() {
     const nombre = document.querySelector('#nombre').value;
@@ -309,10 +316,50 @@ function mostrarResumen() {
     resumen.appendChild(botonReservar);
 }   
 
+//Enviar la cita a la API
+async function reservarCita() {
 
-function reservarCita() {
-    console.log('Reservando cita...');
+    const { nombre, fecha, hora, servicios, id  } = cita;
+
+    const idServicios = servicios.map(servicio => servicio.id);
+
+    const datos = new FormData();
+    datos.append('usuarioId', cita.id);
+    datos.append('fecha', cita.fecha);
+    datos.append('hora', cita.hora);
+    datos.append('servicios', idServicios);
+
+    try {
+        const url = 'http://localhost:3000/api/citas';
+
+        const respuesta = await fetch(url, {
+            method: 'POST',
+            body: datos
+        });
+
+        const resultado = await respuesta.json();
+        console.log(resultado.resultado);
+
+        if (resultado.resultado) {
+            Swal.fire({
+                icon: "success",
+                title: "Cita creada",
+                text: "Tu cita fue creada correctamente",
+                confirmButtonText: "OK"
+            }).then(() => {
+                window.location.reload();
+            });
+        }
+    } catch (error) {
+        Swal.fire({
+             icon: "error",
+            title: "Error",
+            text: "Hubo un error al crear la cita",
+        });
+    }   
 }
 
-       
-    
+//console.log(...datos); //Convierte el FormData a un objeto literal
+
+//return json_encode(['query'  => $query]); //Convierte el array a JSON
+
