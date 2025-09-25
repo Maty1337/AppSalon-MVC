@@ -151,25 +151,47 @@ class ActiveRecord
         $resultado = self::consultarSQL($query);
         return array_shift($resultado);
     }
+public function crear()
+{
+    $atributos = $this->sanitizarAtributos();
+    unset($atributos['id']); // que MySQL genere el id
 
-    // crea un nuevo registro
-    // crea un nuevo registro (versión simple)
-    public function crear()
-    {
-        $atributos = $this->sanitizarAtributos();
-
-        $query  = "INSERT INTO " . static::$tabla . " (";
-        $query .= implode(', ', array_keys($atributos));
-        $query .= ") VALUES ('";
-        $query .= implode("','", array_values($atributos));
-        $query .= "')";
-
-        $resultado = self::$db->query($query);
-        return [
-            'resultado' => $resultado,
-            'id' => self::$db->insert_id
-        ];
+    if (empty($atributos)) {
+        throw new \Exception("No hay atributos para insertar");
     }
+
+    $campos = array_keys($atributos);
+    $placeholders = implode(', ', array_fill(0, count($campos), '?'));
+    $sql = "INSERT INTO " . static::$tabla . " (" . implode(', ', $campos) . ") VALUES ($placeholders)";
+
+    $stmt = self::$db->prepare($sql);
+    if (!$stmt) {
+        throw new \Exception("Error al preparar SQL: " . self::$db->error);
+    }
+
+    // Armar tipos dinámicamente: i=int, d=double, s=string, b=blob
+    $types = '';
+    $values = [];
+    foreach ($atributos as $v) {
+        if (is_int($v))       { $types .= 'i'; }
+        elseif (is_float($v)) { $types .= 'd'; }
+        elseif (is_null($v))  { $types .= 's'; $v = null; } // mysqli no tiene tipo 'null'; pasa como s
+        else                  { $types .= 's'; }
+        $values[] = $v;
+    }
+
+    // bind_param requiere referencias
+    $stmt->bind_param($types, ...$values);
+
+    if (!$stmt->execute()) {
+        throw new \mysqli_sql_exception($stmt->error, $stmt->errno);
+    }
+
+    return [
+        'resultado' => true,
+        'id' => self::$db->insert_id
+    ];
+}
 
 
     // Actualizar el registro
