@@ -23,6 +23,23 @@
         width: 95%;
         margin: 0 auto;
         padding: 3rem 0rem;
+        @include m.tablet{
+            overflow: scroll;
+        }
+        // Elimina el fondo del track
+    &::-webkit-scrollbar {
+      width: 8px;   // solo el grosor
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent; // 👈 sin fondo
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #888;         // color de la barrita
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
     }
 }
 
