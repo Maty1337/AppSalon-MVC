@@ -13,7 +13,7 @@
 public/build/
 
 # Archivos de entorno (no deben subirse por seguridad)
-.env
+includes/.env
 .env.local
 
 # Logs

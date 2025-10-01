@@ -1,5 +1,6 @@
 <?php
 
+// Muestra el contenido de una variable
 function debuguear($variable) : string {
     echo "<pre>";
     var_dump($variable);
@@ -11,4 +12,24 @@ function debuguear($variable) : string {
 function s($html) : string {
     $s = htmlspecialchars($html);
     return $s;
+}
+
+// Validar tipo de contenido
+function isAuth() : void {
+    if(!isset($_SESSION['login'])) {
+        header('Location: /');
+    }
+}
+
+function isAdmin() : void {
+    if(!isset($_SESSION['admin'])){
+        header('Location: /');
+    }
+}
+
+function esUltimo(string $actual, string $proximo): bool {
+    if($actual !== $proximo) {
+        return true;
+    }
+    return false;
 }
