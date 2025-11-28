@@ -30,8 +30,6 @@ Incluye autenticación, gestión de servicios, validaciones, SCSS compilado con 
 
 ## 📸 Capturas de pantalla
 
-Agrega tus imágenes dentro de `readme-assets/` y enlazalas así:
-
 Crear Cuenta
 ![Crear Cuenta](https://raw.githubusercontent.com/Maty1337/AppSalon-MVC/main/readme-assets/crear-cuenta.png)
 
